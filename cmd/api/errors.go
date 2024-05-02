@@ -5,6 +5,10 @@ import (
 	"net/http"
 )
 
+func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	app.errorRespone(w, r, http.StatusUnprocessableEntity, errors)
+}
+
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorRespone(w, r, http.StatusBadRequest, err.Error())
 }
@@ -17,8 +21,8 @@ func (app *application) errorRespone(w http.ResponseWriter, r *http.Request, sta
 	err := app.writeJSON(w, status, env, nil)
 	if err != nil {
 		app.logError(r, err)
+		w.WriteHeader(500)
 	}
-	w.WriteHeader(500)
 }
 
 func (app *application) serverErrorRespone(w http.ResponseWriter, r *http.Request, err error) {
