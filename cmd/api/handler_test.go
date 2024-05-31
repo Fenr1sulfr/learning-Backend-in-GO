@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,16 +14,22 @@ import (
 )
 
 func configureAppForTest() *application {
-	var cfg config
-	flag.IntVar(&cfg.port, "port", 4000, "Api server port")
-	flag.StringVar(&cfg.env, "env", "development", "Enviroment (development|staging|production)")
 
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://greenlight:pa55word@localhost:5433/greenlight?sslmode=disable", "PostgreSQL dsn")
-
-	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
-	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
-	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
-	flag.Parse()
+	cfg := config{
+		port: 4000,
+		env:  "dev",
+		db: struct {
+			dsn          string
+			maxOpenConns int
+			maxIdleConns int
+			maxIdleTime  string
+		}{
+			dsn:          `postgres://greenlight:pa55word@localhost:5433/greenlight?sslmode=disable`,
+			maxOpenConns: 25,
+			maxIdleConns: 25,
+			maxIdleTime:  "15m",
+		},
+	}
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	db, err := openDB(cfg)
 	if err != nil {
@@ -40,6 +45,9 @@ func configureAppForTest() *application {
 	return app
 
 }
+
+var testapp = configureAppForTest()
+
 func TestMovieHandler(t *testing.T) {
 	testapp := configureAppForTest()
 
@@ -70,31 +78,24 @@ func TestMovieHandler(t *testing.T) {
 }
 
 func TestHealthcheckHandler(t *testing.T) {
-	// Create a mock application instance
-	testapp := configureAppForTest()
 
-	// Define an expected response envelope
 	expectedEnv := envelope{
 		"status": "available",
 		"system_info": map[string]any{
 			"environment": testapp.config.env,
-			"version":     version, // Assuming version is defined elsewhere
+			"version":     version,
 		},
 	}
 
-	// Create a recorder to capture the response
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/healthcheck", nil)
 
-	// Call the handler with the mock app and recorder
 	testapp.healthcheckHandler(w, r)
 
-	// Assert on the response status code
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, w.Code)
 	}
 
-	// Assert on the response body (consider using a JSON marshalling library)
 	var actualEnv envelope
 	err := json.NewDecoder(w.Body).Decode(&actualEnv)
 	if err != nil {

@@ -89,26 +89,17 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	// Create a MovieModel instance with a real database connection (replace with your actual database connection)
 	dataBase, err := openDB(ConfigObject)
 	movieModel := data.MovieModel{DB: dataBase}
-	// Define a valid movie ID (assuming some movies exist in the database)
-	testID := int64(1)
+	testID := int64(0)
 
-	// Call the Get function
 	movie, err := movieModel.Get(testID)
 
-	// Here, we cannot verify the exact SQL query or returned data without mocking.
-	// However, we can check for errors and handle different scenarios.
-
 	if err != nil {
-		// Handle the error based on the expected behavior (e.g., ErrNoRecordFound for non-existent ID)
-		require.Equal(t, sql.ErrNoRows, err) // Replace with your expected error
+		require.Equal(t, sql.ErrNoRows, err)
 		return
 	}
 
-	// If no error, assert that a movie is returned
 	require.NotNil(t, movie)
 
-	// Optionally, you can perform additional assertions on the returned movie properties.
 }

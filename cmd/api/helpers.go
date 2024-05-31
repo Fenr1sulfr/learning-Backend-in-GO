@@ -56,7 +56,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	max_bytes := 1_048_576
 	r.Body = http.MaxBytesReader(w, r.Body, int64(max_bytes))
 	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
+	dec.DisallowUnknownFields()	
 	err := dec.Decode(dst)
 	if err != nil {
 		var syntaxError *json.SyntaxError
