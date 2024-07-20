@@ -1,12 +1,60 @@
 package data
 
-import "sulfur.test.net/internal/data/validator"
+import (
+	"math"
+	"strings"
+
+	"sulfur.test.net/internal/data/validator"
+)
+
+type Metadata struct {
+	CurrentPage  int `json:"current_page,omitempty"`
+	PageSize     int `json:"page_size,omitempty"`
+	FirstPage    int `json:"first_page,omitempty"`
+	LastPage     int `json:"last_page,omitempty"`
+	TotalRecords int `json:"total_records,omitempty"`
+}
+
+func calculateMetadata(TotalRecords, page, PageSize int) Metadata {
+	if TotalRecords == 0 {
+		return Metadata{}
+	}
+	return Metadata{
+		CurrentPage:  page,
+		PageSize:     PageSize,
+		FirstPage:    1,
+		LastPage:     int(math.Ceil(float64(TotalRecords) / float64(PageSize))),
+		TotalRecords: TotalRecords,
+	}
+}
 
 type Filters struct {
 	Page         int
 	PageSize     int
 	Sort         string
 	SortSafeList []string
+}
+
+func (f Filters) limit() int {
+	return f.PageSize
+}
+func (f Filters) offset() int {
+	return (f.Page - 1) * f.PageSize
+}
+func (f Filters) sortColumn() string {
+	for _, safeValue := range f.SortSafeList {
+		if f.Sort == safeValue {
+			return strings.TrimPrefix(f.Sort, "-")
+		}
+	}
+	panic("unsafe sort parameter" + f.Sort)
+}
+
+func (f Filters) sortDirection() string {
+	if strings.HasPrefix(f.Sort, "-") {
+		return "DESC"
+	}
+	return "ASC"
 }
 
 func ValidateFilters(v *validator.Validator, f Filters) {
