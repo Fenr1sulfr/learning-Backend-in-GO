@@ -17,7 +17,10 @@ func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Reques
 	app.errorRespone(w, r, http.StatusBadRequest, err.Error())
 }
 func (app *application) logError(r *http.Request, err error) {
-	app.logger.Print(err)
+	app.logger.PrintError(err, map[string]string{
+		"request_method": r.Method,
+		"request_url":    r.URL.String(),
+	})
 }
 
 func (app *application) errorRespone(w http.ResponseWriter, r *http.Request, status int, message any) {
@@ -45,3 +48,9 @@ func (app *application) methodNotAllowed(w http.ResponseWriter, r *http.Request)
 	message := fmt.Sprintf("the %s method is not supported for this resource", r.Method)
 	app.errorRespone(w, r, http.StatusMethodNotAllowed, message)
 }
+
+func (app *application) rateLimitExceedResponse(w http.ResponseWriter, r *http.Request) {
+	message := "rate limit exceeded"
+	app.errorRespone(w, r, http.StatusTooManyRequests, message)
+}
+	
