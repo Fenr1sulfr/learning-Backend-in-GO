@@ -16,6 +16,21 @@ import (
 
 type envelope map[string]any
 
+func (app *application) background(fn func()) {
+	app.wg.Add(1)
+	go func() {
+		defer app.wg.Done()
+
+		defer func() {
+			if err := recover(); err != nil {
+				app.logger.PrintError(fmt.Errorf("%s", err), nil)
+			}
+		}()
+		fn()
+	}()
+
+}
+
 func (app *application) readString(qs url.Values, key string, defaultValue string) string {
 	s := qs.Get(key)
 	if s == "" {
@@ -56,7 +71,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	max_bytes := 1_048_576
 	r.Body = http.MaxBytesReader(w, r.Body, int64(max_bytes))
 	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()	
+	dec.DisallowUnknownFields()
 	err := dec.Decode(dst)
 	if err != nil {
 		var syntaxError *json.SyntaxError
