@@ -14,6 +14,11 @@ import (
 var (
 	ErrDuplicateEmail = errors.New("duplicate email")
 )
+var AnonymousUser = &User{}
+
+func (u *User) isAnonymous() bool {
+	return u == AnonymousUser
+}
 
 type User struct {
 	ID        int64     `json:"id"`

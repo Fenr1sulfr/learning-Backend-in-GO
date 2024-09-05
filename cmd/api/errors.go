@@ -12,7 +12,20 @@ func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Requ
 func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	app.errorRespone(w, r, http.StatusUnprocessableEntity, errors)
 }
+func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r *http.Request) {
+	message := "you must be authenticated to access this resource"
+	app.errorRespone(w, r, http.StatusUnauthorized, message)
+}
+func (app *application) inactiveAccountResponse(w http.ResponseWriter, r *http.Request) {
+	message := "your user account must be activated to access this resource"
+	app.errorRespone(w, r, http.StatusForbidden, message)
+}
 
+func (app *application) invalidAuthenticationResponse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("WWW-Authenticate", "Bearer")
+	message := "invalid or missing authentication token"
+	app.errorRespone(w, r, http.StatusUnauthorized, message)
+}
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorRespone(w, r, http.StatusBadRequest, err.Error())
 }
@@ -22,7 +35,10 @@ func (app *application) logError(r *http.Request, err error) {
 		"request_url":    r.URL.String(),
 	})
 }
-
+func (app *application) invalidCredentialResponse(w http.ResponseWriter, r *http.Request) {
+	message := "invalid authentication credentials"
+	app.errorRespone(w, r, http.StatusUnauthorized, message)
+}
 func (app *application) errorRespone(w http.ResponseWriter, r *http.Request, status int, message any) {
 	env := envelope{"error": message}
 	err := app.writeJSON(w, status, env, nil)
@@ -53,4 +69,3 @@ func (app *application) rateLimitExceedResponse(w http.ResponseWriter, r *http.R
 	message := "rate limit exceeded"
 	app.errorRespone(w, r, http.StatusTooManyRequests, message)
 }
-	
