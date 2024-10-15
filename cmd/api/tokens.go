@@ -29,6 +29,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
+	app.logger.PrintInfo(input.Email, nil)
 	user, err := app.models.Users.GetByEmail(input.Email)
 
 	if err != nil {

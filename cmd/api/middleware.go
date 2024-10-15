@@ -58,7 +58,7 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		v := validator.New()
 
 		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
-			app.invalidAuthenticationTokenResponse(w,r)
+			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
 		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
