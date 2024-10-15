@@ -5,6 +5,12 @@ import (
 	"net/http"
 )
 
+func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("WWW-Authenticate", "Bearer")
+	message := "invalid or missing authentication token"
+	app.errorRespone(w, r, http.StatusUnauthorized, message)
+}
+
 func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
 	message := "unable to update the record due to an edit conflict, please try again"
 	app.errorRespone(w, r, http.StatusConflict, message)
@@ -21,11 +27,7 @@ func (app *application) inactiveAccountResponse(w http.ResponseWriter, r *http.R
 	app.errorRespone(w, r, http.StatusForbidden, message)
 }
 
-func (app *application) invalidAuthenticationResponse(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("WWW-Authenticate", "Bearer")
-	message := "invalid or missing authentication token"
-	app.errorRespone(w, r, http.StatusUnauthorized, message)
-}
+
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorRespone(w, r, http.StatusBadRequest, err.Error())
 }

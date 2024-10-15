@@ -14,7 +14,7 @@ import (
 	"sulfur.test.net/internal/data/validator"
 )
 
-func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := app.contextGetUser(r)
 		if user.IsAnonymous() {
@@ -29,6 +29,17 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 
 	})
 }
+func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+		if !user.Activated {
+			app.inactiveAccountResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+	return app.requireAuthenticatedUser(fn)
+}
 func (app *application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Authorization")
@@ -40,20 +51,21 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		}
 		headerParts := strings.Split(authorizationHeader, " ")
 		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-			app.invalidAuthenticationResponse(w, r)
+			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
 		token := headerParts[1]
 		v := validator.New()
 
 		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+			app.invalidAuthenticationTokenResponse(w,r)
 			return
 		}
 		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrNoRecordFound):
-				app.invalidAuthenticationResponse(w, r)
+				app.invalidAuthenticationTokenResponse(w, r)
 			default:
 				app.serverErrorRespone(w, r, err)
 			}
