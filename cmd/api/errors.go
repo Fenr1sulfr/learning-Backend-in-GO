@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+func (app *application) notPermittedResponse(w http.ResponseWriter, r *http.Request) {
+	message := "your user account doesn't have the necessary permissions to access this resource"
+	app.errorRespone(w, r, http.StatusForbidden, message)
+}
+
 func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", "Bearer")
 	message := "invalid or missing authentication token"
@@ -26,7 +31,6 @@ func (app *application) inactiveAccountResponse(w http.ResponseWriter, r *http.R
 	message := "your user account must be activated to access this resource"
 	app.errorRespone(w, r, http.StatusForbidden, message)
 }
-
 
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorRespone(w, r, http.StatusBadRequest, err.Error())
