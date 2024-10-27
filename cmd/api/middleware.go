@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,6 +14,22 @@ import (
 	"sulfur.test.net/internal/data"
 	"sulfur.test.net/internal/data/validator"
 )
+
+func (app *application) metrics(next http.Handler) http.Handler {
+	totalRequestReceived := expvar.NewInt("total_requests_received")
+	totalResponsesSent := expvar.NewInt("total_requests_sent")
+	totalProcessingTimeMicroSeconds := expvar.NewInt("total_processing_time_micro_seconds")
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		totalRequestReceived.Add(1)
+		next.ServeHTTP(w, r)
+
+		totalResponsesSent.Add(1)
+		duration := time.Since(start).Microseconds()
+		totalProcessingTimeMicroSeconds.Add(duration)
+	})
+}
 
 func (app *application) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
