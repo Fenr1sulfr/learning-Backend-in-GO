@@ -9,7 +9,7 @@ import (
 
 type Runtime int32
 
-var ErrInvlaidRuntimeFormat = errors.New("Invalid runtime format")
+var ErrInvlaidRuntimeFormat = errors.New(`invalid runtime format`)
 
 func (r Runtime) MarshalJSON() ([]byte, error) {
 	jsonValue := fmt.Sprintf("%d mins", r)

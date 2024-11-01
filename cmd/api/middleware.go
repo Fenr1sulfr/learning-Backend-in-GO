@@ -4,12 +4,14 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/felixge/httpsnoop"
+	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 	"sulfur.test.net/internal/data"
 	"sulfur.test.net/internal/data/validator"
@@ -19,15 +21,14 @@ func (app *application) metrics(next http.Handler) http.Handler {
 	totalRequestReceived := expvar.NewInt("total_requests_received")
 	totalResponsesSent := expvar.NewInt("total_requests_sent")
 	totalProcessingTimeMicroSeconds := expvar.NewInt("total_processing_time_micro_seconds")
+	totalResponsesSentByStatus := expvar.NewMap("total_responses_sent_by_status")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
 		totalRequestReceived.Add(1)
-		next.ServeHTTP(w, r)
-
+		metrics := httpsnoop.CaptureMetrics(next, w, r)
 		totalResponsesSent.Add(1)
-		duration := time.Since(start).Microseconds()
-		totalProcessingTimeMicroSeconds.Add(duration)
+		totalProcessingTimeMicroSeconds.Add(metrics.Duration.Microseconds())
+		totalResponsesSentByStatus.Add(strconv.Itoa(metrics.Code), 1)
 	})
 }
 
@@ -174,11 +175,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.config.limiter.enabled {
 
-			ip, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				app.serverErrorRespone(w, r, err)
-				return
-			}
+			ip := realip.FromRequest(r)
 			mu.Lock()
 			if _, found := clients[ip]; !found {
 				// Create and add a new client struct to the map if it doesn't already exist.

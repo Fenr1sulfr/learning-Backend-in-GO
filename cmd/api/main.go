@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"expvar"
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -15,9 +16,12 @@ import (
 	"sulfur.test.net/internal/data"
 	"sulfur.test.net/internal/data/jsonlog"
 	"sulfur.test.net/internal/mailer"
+	"sulfur.test.net/internal/vcs"
 )
 
-const version = "1.0.0"
+var (
+	version = vcs.Version()
+)
 
 type config struct {
 	port int
@@ -59,7 +63,7 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "Api server port")
 	flag.StringVar(&cfg.env, "env", "development", "Enviroment (development|staging|production)")
 
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://greenlight:pa55word@localhost:5433/greenlight?sslmode=disable", "PostgreSQL dsn")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "PostgreSQL dsn")
 
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
@@ -80,7 +84,15 @@ func main() {
 		return nil
 	})
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		os.Exit(0)
+	}
+
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
 	db, err := openDB(cfg)
